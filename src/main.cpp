@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui_internal.h>
 
 #include "shader.h"
 #include "camera/look_at_camera.h"
@@ -19,6 +20,8 @@
 #include "camera/arcball_camera.h"
 #include "arcball_camera_controller.h"
 #include "utils.h"
+#include "portable-file-dialogs.h"
+#include "nfd.h"
 
 using namespace glm;
 
@@ -58,8 +61,84 @@ struct {
     bool drawPoints = true;
     int cursor_type = GLFW_CURSOR_NORMAL; // GLFW_CURSOR_DISABLED
     bool start_maximized = true;
-    int transparent_background = GLFW_TRUE; // GLFW_FALSE
+    int transparent_background = GLFW_FALSE; // GLFW_FALSE
 } global_settings;
+
+static vector<char*> file_names;
+
+static void ShowExampleMenuFile() {
+    ImGui::MenuItem("(dummy menu)", NULL, false, false);
+    if (ImGui::MenuItem("New")) {}
+    if (ImGui::MenuItem("Open", "Ctrl+O")) {
+        nfdpathset_t user_path;
+        nfdresult_t result = NFD_OpenDialogMultiple("bin1;png,jpg;pdf", NULL, &user_path);
+        if (result == NFD_OKAY) {
+            size_t i;
+            for (i = 0; i < NFD_PathSet_GetCount(&user_path); ++i) {
+                nfdchar_t *path = NFD_PathSet_GetPath(&user_path, i);
+                file_names.push_back(path);
+                printf("Path %i: %s\n", (int) i, path);
+            }
+            NFD_PathSet_Free(&user_path);
+        } else if (result == NFD_CANCEL) {
+            puts("User pressed cancel.");
+        } else {
+            printf("Error: %s\n", NFD_GetError());
+        }
+    }
+    if (ImGui::BeginMenu("Open Recent")) {
+        ImGui::MenuItem("fish_hat.c");
+        ImGui::MenuItem("fish_hat.inl");
+        ImGui::MenuItem("fish_hat.h");
+        if (ImGui::BeginMenu("More..")) {
+            ImGui::MenuItem("Hello");
+            ImGui::MenuItem("Sailor");
+            if (ImGui::BeginMenu("Recurse..")) {
+                ShowExampleMenuFile();
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenu();
+    }
+    if (ImGui::MenuItem("Save", "Ctrl+S")) {}
+    if (ImGui::MenuItem("Save As..")) {}
+    ImGui::Separator();
+    if (ImGui::BeginMenu("Options")) {
+        static bool enabled = true;
+        ImGui::MenuItem("Enabled", "", &enabled);
+        ImGui::BeginChild("child", ImVec2(0, 60), true);
+        for (int i = 0; i < 10; i++)
+            ImGui::Text("Scrolling Text %d", i);
+        ImGui::EndChild();
+        static float f = 0.5f;
+        static int n = 0;
+        static bool b = true;
+        ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
+        ImGui::InputFloat("Input", &f, 0.1f);
+        ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
+        ImGui::Checkbox("Check", &b);
+        ImGui::EndMenu();
+    }
+    if (ImGui::BeginMenu("Colors")) {
+        float sz = ImGui::GetTextLineHeight();
+        for (int i = 0; i < ImGuiCol_COUNT; i++) {
+            const char *name = ImGui::GetStyleColorName((ImGuiCol) i);
+            ImVec2 p = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32((ImGuiCol) i));
+            ImGui::Dummy(ImVec2(sz, sz));
+            ImGui::SameLine();
+            ImGui::MenuItem(name);
+        }
+        ImGui::EndMenu();
+    }
+    if (ImGui::BeginMenu("Disabled", false)) // Disabled
+    {
+        IM_ASSERT(0);
+    }
+    if (ImGui::MenuItem("Checked", NULL, true)) {}
+    if (ImGui::MenuItem("Quit", "Alt+F4")) {}
+}
 
 int main() {
     glfwSetErrorCallback(error_callback);
@@ -105,6 +184,11 @@ int main() {
     glLineWidth(2);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
+
+
+    bool show_demo_window = true;
+    bool show_another_window = true;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     while (!glfwWindowShouldClose(window)) {
         //glClearColor(1.f * 57 / 255, 1.f * 57 / 255, 1.f * 57 / 255, 0.5f);
         if (global_settings.transparent_background) glClearColor(0.f, 0.f, 0.f, 0.f);
@@ -138,11 +222,6 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        bool show_demo_window = true;
-        bool show_another_window = true;
-        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
         ImGui::ShowDemoWindow(&show_demo_window);
 
         {
@@ -170,6 +249,56 @@ int main() {
                         ImGui::GetIO().Framerate);
             ImGui::End();
         }
+        {
+
+            static bool show_app_documents = false;
+            static bool show_app_main_menu_bar = false;
+            static bool show_app_console = false;
+            static bool show_app_log = false;
+            static bool show_app_layout = false;
+            static bool show_app_property_editor = false;
+            static bool show_app_long_text = false;
+            static bool show_app_auto_resize = false;
+            static bool show_app_constrained_resize = false;
+            static bool show_app_simple_overlay = false;
+            static bool show_app_window_titles = false;
+            static bool show_app_custom_rendering = false;
+
+            static bool p_open = NULL;
+            ImGuiWindowFlags window_flags = 0;
+            window_flags |= ImGuiWindowFlags_MenuBar;
+            ImGui::Begin("Signal Data", &p_open, window_flags);
+
+
+            if (ImGui::BeginMenuBar()) {
+                if (ImGui::BeginMenu("Menu")) {
+                    ShowExampleMenuFile();
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Examples")) {
+                    ImGui::MenuItem("Main menu bar", NULL, &show_app_main_menu_bar);
+                    ImGui::MenuItem("Console", NULL, &show_app_console);
+                    ImGui::MenuItem("Log", NULL, &show_app_log);
+                    ImGui::MenuItem("Simple layout", NULL, &show_app_layout);
+                    ImGui::MenuItem("Property editor", NULL, &show_app_property_editor);
+                    ImGui::MenuItem("Long text display", NULL, &show_app_long_text);
+                    ImGui::MenuItem("Auto-resizing window", NULL, &show_app_auto_resize);
+                    ImGui::MenuItem("Constrained-resizing window", NULL, &show_app_constrained_resize);
+                    ImGui::MenuItem("Simple overlay", NULL, &show_app_simple_overlay);
+                    ImGui::MenuItem("Manipulating window titles", NULL, &show_app_window_titles);
+                    ImGui::MenuItem("Custom rendering", NULL, &show_app_custom_rendering);
+                    ImGui::MenuItem("Documents", NULL, &show_app_documents);
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }
+            static int listbox_item_current = 1;
+            char **listbox_items = file_names.data();
+            if(listbox_items)
+                ImGui::ListBox("listbox\n(single select)", &listbox_item_current, listbox_items, file_names.size(), 4);
+            ImGui::End();
+
+        }
 
         if (show_another_window) {
             ImGui::Begin("Another Window",
@@ -181,9 +310,6 @@ int main() {
         }
 
         ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -191,7 +317,8 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    // Cleanup
+
+    // cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
