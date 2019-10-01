@@ -22,6 +22,8 @@
 #include "utils.h"
 #include "portable-file-dialogs.h"
 #include "nfd.h"
+#include "gui.h"
+#include "signal_struct.h"
 
 using namespace glm;
 
@@ -64,81 +66,7 @@ struct {
     int transparent_background = GLFW_FALSE; // GLFW_FALSE
 } global_settings;
 
-static vector<char*> file_names;
-
-static void ShowExampleMenuFile() {
-    ImGui::MenuItem("(dummy menu)", NULL, false, false);
-    if (ImGui::MenuItem("New")) {}
-    if (ImGui::MenuItem("Open", "Ctrl+O")) {
-        nfdpathset_t user_path;
-        nfdresult_t result = NFD_OpenDialogMultiple("bin1;png,jpg;pdf", NULL, &user_path);
-        if (result == NFD_OKAY) {
-            size_t i;
-            for (i = 0; i < NFD_PathSet_GetCount(&user_path); ++i) {
-                nfdchar_t *path = NFD_PathSet_GetPath(&user_path, i);
-                file_names.push_back(path);
-                printf("Path %i: %s\n", (int) i, path);
-            }
-            NFD_PathSet_Free(&user_path);
-        } else if (result == NFD_CANCEL) {
-            puts("User pressed cancel.");
-        } else {
-            printf("Error: %s\n", NFD_GetError());
-        }
-    }
-    if (ImGui::BeginMenu("Open Recent")) {
-        ImGui::MenuItem("fish_hat.c");
-        ImGui::MenuItem("fish_hat.inl");
-        ImGui::MenuItem("fish_hat.h");
-        if (ImGui::BeginMenu("More..")) {
-            ImGui::MenuItem("Hello");
-            ImGui::MenuItem("Sailor");
-            if (ImGui::BeginMenu("Recurse..")) {
-                ShowExampleMenuFile();
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::EndMenu();
-    }
-    if (ImGui::MenuItem("Save", "Ctrl+S")) {}
-    if (ImGui::MenuItem("Save As..")) {}
-    ImGui::Separator();
-    if (ImGui::BeginMenu("Options")) {
-        static bool enabled = true;
-        ImGui::MenuItem("Enabled", "", &enabled);
-        ImGui::BeginChild("child", ImVec2(0, 60), true);
-        for (int i = 0; i < 10; i++)
-            ImGui::Text("Scrolling Text %d", i);
-        ImGui::EndChild();
-        static float f = 0.5f;
-        static int n = 0;
-        static bool b = true;
-        ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
-        ImGui::InputFloat("Input", &f, 0.1f);
-        ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
-        ImGui::Checkbox("Check", &b);
-        ImGui::EndMenu();
-    }
-    if (ImGui::BeginMenu("Colors")) {
-        float sz = ImGui::GetTextLineHeight();
-        for (int i = 0; i < ImGuiCol_COUNT; i++) {
-            const char *name = ImGui::GetStyleColorName((ImGuiCol) i);
-            ImVec2 p = ImGui::GetCursorScreenPos();
-            ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32((ImGuiCol) i));
-            ImGui::Dummy(ImVec2(sz, sz));
-            ImGui::SameLine();
-            ImGui::MenuItem(name);
-        }
-        ImGui::EndMenu();
-    }
-    if (ImGui::BeginMenu("Disabled", false)) // Disabled
-    {
-        IM_ASSERT(0);
-    }
-    if (ImGui::MenuItem("Checked", NULL, true)) {}
-    if (ImGui::MenuItem("Quit", "Alt+F4")) {}
-}
+static vector<char *> file_names;
 
 int main() {
     glfwSetErrorCallback(error_callback);
@@ -165,26 +93,26 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetScrollCallback(window, scroll_callback);
-    // Setup Dear ImGui context
+    // setup ImGui context
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    ImGui::StyleColorsDark(); // ImGui::StyleColorsClassic();
-    // Setup Platform/Renderer bindings
+    ImGui::StyleColorsDark();
+    // setup platform/renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
     // ==============================================================================
 
-    Shader planeShader("shaders/texture.vs", "shaders/texture.fs");
-    uint planeModelUniform = glGetUniformLocation(planeShader.ID, "model");
-    uint planeViewUniform = glGetUniformLocation(planeShader.ID, "view");
-    uint planeProjUniform = glGetUniformLocation(planeShader.ID, "projection");
+    Shader signal_shader("shaders/signal.vs", "shaders/signal.fs");
+    uint dxUniform = glGetUniformLocation(signal_shader.ID, "dx");
+    uint signal_model_u = glGetUniformLocation(signal_shader.ID, "model");
+    uint signal_view_u = glGetUniformLocation(signal_shader.ID, "view");
+    uint signal_proj_u = glGetUniformLocation(signal_shader.ID, "proj");
 
-    glLineWidth(2);
+    glLineWidth(3);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
-
 
     bool show_demo_window = true;
     bool show_another_window = true;
@@ -204,11 +132,12 @@ int main() {
         global_view = fps_camera.view();
         //global_view = arcball_camera.view();
         global_proj = perspective(radians(45.f), SCR_WIDTH * 1.f / SCR_HEIGHT, 0.1f, 100.f);
+        //global_proj = ortho(0.0f,(float)SCR_WIDTH, 0.0f, (float)SCR_HEIGHT, 0.1f, 100.f);
         //mat4 projection = perspective(radians(45.f), SCR_WIDTH * 1.f / SCR_HEIGHT, 0.1f, 100.f);
         float R = 10;
         vec3 cam_pos(cos(time) * R, 0, sin(time) * R);
-        look_at_camera.translate(vec3(cam_pos.x, cam_pos.y, cam_pos.z) * loop_deltatime);
-        //mat4 view = look_at_camera.view();
+        //look_at_camera.translate(vec3(cam_pos.x, cam_pos.y, cam_pos.z) * loop_deltatime);
+        //global_view = look_at_camera.view();
 
         frames_cnt++;
         if (time - last_fps_time >= 1.0) {
@@ -217,38 +146,24 @@ int main() {
             last_fps_time += 1.0;
         }
 
-        // Start the Dear ImGui frame
+
+        mat4 model(1.0f);
+        for(int i = 0; i < signal_views.size(); i++) {
+            signal_shader.use();
+            glUniformMatrix4fv(signal_view_u, 1, GL_FALSE, value_ptr(global_view));
+            glUniformMatrix4fv(signal_proj_u, 1, GL_FALSE, value_ptr(global_proj));
+            glUniformMatrix4fv(signal_model_u, 1, GL_FALSE, value_ptr(model));
+            glUniform1f(dxUniform, 0.1f);
+            draw_signal(signal_views[i]);
+        }
+
+        // start the ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         ImGui::ShowDemoWindow(&show_demo_window);
 
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin(
-                    "Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text(
-                    "This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float *) &clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button(
-                    "Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                        ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
         {
 
             static bool show_app_documents = false;
@@ -272,7 +187,7 @@ int main() {
 
             if (ImGui::BeginMenuBar()) {
                 if (ImGui::BeginMenu("Menu")) {
-                    ShowExampleMenuFile();
+                    ShowExampleMenuFile(file_names);
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Examples")) {
@@ -292,27 +207,19 @@ int main() {
                 }
                 ImGui::EndMenuBar();
             }
+
             static int listbox_item_current = 1;
             char **listbox_items = file_names.data();
-            if(listbox_items)
+            if (listbox_items)
                 ImGui::ListBox("listbox\n(single select)", &listbox_item_current, listbox_items, file_names.size(), 4);
             ImGui::End();
 
         }
 
-        if (show_another_window) {
-            ImGui::Begin("Another Window",
-                         &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
-
         ImGui::Render();
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+// ========================================================================================================
         process_input(window);
         glfwSwapBuffers(window);
         glfwPollEvents();

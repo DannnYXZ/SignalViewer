@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include "signal_struct.h"
 
 using namespace std;
 
@@ -23,6 +24,10 @@ char *load_file(char *filepath) {
         cout.write(buffer, length);
     }
     return buffer;
+}
+
+signal_file *load_signal_file(char *filepath) {
+    return reinterpret_cast<signal_file*>(load_file(filepath));
 }
 
 #endif //DATAVIEWER_FILE_LOADER_H

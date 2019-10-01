@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_executable(DataViewer src/main.cpp
         deps/glad/glad.c
-        src/signal_data_struct.h
+        src/signal_struct.h
         src/file_loader.h
         deps/imgui/imgui.cpp
         deps/imgui/imgui_draw.cpp
@@ -14,7 +14,7 @@ add_executable(DataViewer src/main.cpp
         deps/imgui/examples/imgui_impl_opengl3.cpp
         deps/imgui/examples/imgui_impl_glfw.cpp
         deps/nfd/nfd_gtk.c
-        deps/nfd/nfd_common.c src/file_repository/file_repository.h)
+        deps/nfd/nfd_common.c src/file_repository/file_repository.h src/gui.h)
 
 # configure GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
