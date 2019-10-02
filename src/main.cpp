@@ -16,9 +16,10 @@
 #include "shader.h"
 #include "camera/look_at_camera.h"
 #include "camera/fps_camera.h"
-#include "fps_camera_controller.h"
+#include "controller/fps_camera_controller.h"
 #include "camera/arcball_camera.h"
-#include "arcball_camera_controller.h"
+#include "controller/arcball_camera_controller.h"
+#include "controller/timeline_ortho_controller.h"
 #include "utils.h"
 #include "portable-file-dialogs.h"
 #include "nfd.h"
@@ -49,11 +50,13 @@ FPSCamera fps_camera(vec3(0, 0, 3));
 FPSCameraController fps_controller(&fps_camera);
 ArcballCamera arcball_camera(identity<quat>(), vec3(0, 0, 0), vec3(0, 0, 5));
 ArcballCameraController arcball_controller(&arcball_camera, SCR_WIDTH, SCR_HEIGHT);
+TimelineOrthoController ortho_controller(SCR_WIDTH, SCR_HEIGHT);
 float timestamp;
 float loop_deltatime;
 double last_mouse_x, last_mouse_y;
 int frames_cnt = 0;
 double last_fps_time = 0;
+float FOV = 45.f;
 
 mat4 global_view;
 mat4 global_proj;
@@ -129,17 +132,21 @@ int main() {
         timestamp = time;
 
         // calculating MVP
-        global_view = fps_camera.view();
+        //global_view = fps_camera.view();
         //global_view = arcball_camera.view();
-        global_proj = perspective(radians(45.f), SCR_WIDTH * 1.f / SCR_HEIGHT, 0.1f, 100.f);
-        //global_proj = ortho(0.0f,(float)SCR_WIDTH, 0.0f, (float)SCR_HEIGHT, 0.1f, 100.f);
-        //mat4 projection = perspective(radians(45.f), SCR_WIDTH * 1.f / SCR_HEIGHT, 0.1f, 100.f);
-        float R = 10;
-        vec3 cam_pos(cos(time) * R, 0, sin(time) * R);
-        //look_at_camera.translate(vec3(cam_pos.x, cam_pos.y, cam_pos.z) * loop_deltatime);
+        global_view = ortho_controller.view();
+
         //global_view = look_at_camera.view();
+        //float C = 10.f;
+        //float R = 10;
+        //vec3 cam_pos(cos(time) * R, 0, sin(time) * R);
+        //look_at_camera.translate(vec3(cam_pos.x, cam_pos.y, cam_pos.z) * loop_deltatime);
 
         frames_cnt++;
+        //global_proj = perspective(radians(FOV), SCR_WIDTH * 1.f / SCR_HEIGHT, 0.1f, 1000.f);
+        //global_proj = ortho(-(float)SCR_WIDTH*C,(float)SCR_WIDTH*C, -(float)SCR_HEIGHT*C, (float)SCR_HEIGHT*C, .1f, 10000.f);
+        global_proj = ortho_controller.proj();
+
         if (time - last_fps_time >= 1.0) {
             printf("%f ms/frame\n", 1000.0 / double(frames_cnt));
             frames_cnt = 0;
@@ -148,7 +155,7 @@ int main() {
 
 
         mat4 model(1.0f);
-        for(int i = 0; i < signal_views.size(); i++) {
+        for (int i = 0; i < signal_views.size(); i++) {
             signal_shader.use();
             glUniformMatrix4fv(signal_view_u, 1, GL_FALSE, value_ptr(global_view));
             glUniformMatrix4fv(signal_proj_u, 1, GL_FALSE, value_ptr(global_proj));
@@ -274,8 +281,10 @@ static void process_input(GLFWwindow *window) {
     };
 
     for (int trackable_key : trackable_keys) {
-        if (glfwGetKey(window, trackable_key) == GLFW_PRESS)
+        if (glfwGetKey(window, trackable_key) == GLFW_PRESS) {
             fps_controller.processKey(trackable_key, loop_deltatime);
+            ortho_controller.processKey(trackable_key, loop_deltatime);
+        }
     }
 }
 
@@ -302,4 +311,8 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action, in
 
 static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     arcball_controller.mouseScroll(xoffset, yoffset);
+    ortho_controller.mouseScroll(xoffset, yoffset);
+    //FOV += 1.f * yoffset;
+    //SCR_WIDTH += 10 * yoffset;
+    //SCR_HEIGHT += 10 * xoffset;
 }

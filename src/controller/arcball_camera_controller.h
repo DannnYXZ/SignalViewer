@@ -1,8 +1,8 @@
 #ifndef CG_ARCBALL_CAMERA_CONTROLLER_H
 #define CG_ARCBALL_CAMERA_CONTROLLER_H
 
-#include "camera/arcball_camera.h"
-#include "utils.h"
+#include "../camera/arcball_camera.h"
+#include "../utils.h"
 #include <glm.hpp>
 #include <GLFW/glfw3.h>
 
@@ -16,7 +16,7 @@ private:
     quat saved_rot;
     int &scr_width, &scr_height;
     vec2 last_mv{0, 0};
-    bool arcball_on = false;
+    bool drag_on = false;
 
     vec3 get_arcball_vec(float x, float y) {
         vec3 P = vec3(2 * x / scr_width - 1, 2 * y / scr_height - 1, 0);
@@ -37,7 +37,7 @@ public:
     }
 
     void mouseMove(double xpos, double ypos) {
-        if (!arcball_on)
+        if (!drag_on)
             return;
         vec3 p0 = get_arcball_vec(last_mv.x, last_mv.y);
         vec3 p1 = get_arcball_vec(xpos, ypos);
@@ -52,12 +52,12 @@ public:
 
     void mouseButton(int button, int action, int mods, double x, double y) {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-            arcball_on = true;
+            drag_on = true;
             saved_rot = quat(camera->orient);
             last_mv = vec2(x, y);
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-            arcball_on = false;
+            drag_on = false;
         }
     }
 

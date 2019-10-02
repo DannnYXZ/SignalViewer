@@ -2,7 +2,7 @@
 #define CG_FPS_CAMERA_CONTROLLER_H
 
 #include <GLFW/glfw3.h>
-#include "camera/fps_camera.h"
+#include "../camera/fps_camera.h"
 
 class FPSCameraController {
 private:
