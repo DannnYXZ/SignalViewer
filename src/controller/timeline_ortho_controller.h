@@ -15,15 +15,15 @@ class TimelineOrthoController {
 private:
     // ArcballCamera *camera;
     quat saved_rot;
-    int &scr_width, &scr_height;
+    //int &scr_width, &scr_height;
+    int scr_width, scr_height;
     vec2 last_mv{0, 0};
     bool drag_on = false;
     vec3 v_trans{0, 0, 0};
     vec2 scale{1, 1};
 public:
 
-    TimelineOrthoController(int &scr_width, int &scr_height) : scr_height(scr_height), scr_width(scr_width) {
-
+    TimelineOrthoController(int scr_width, int scr_height) : scr_height(scr_height), scr_width(scr_width) {
     }
 
     void mouseMove(double xpos, double ypos) {
@@ -50,11 +50,11 @@ public:
         if (key == GLFW_KEY_W)
             v_trans += vec3(0, 0, 1) * MOVE_SPEED * deltatime;
         if (key == GLFW_KEY_A)
-            v_trans += vec3(-1, 0, 0) * MOVE_SPEED * deltatime;
+            v_trans += vec3(-1, 0, 0) * MOVE_SPEED * (1 / scale.x) * deltatime;
         if (key == GLFW_KEY_S)
             v_trans += vec3(0, 0, -1) * MOVE_SPEED * deltatime;
         if (key == GLFW_KEY_D)
-            v_trans += vec3(1, 0, 0) * MOVE_SPEED * deltatime;
+            v_trans += vec3(1, 0, 0) * MOVE_SPEED * (1 / scale.x) * deltatime;
     }
 
     mat4 view() {

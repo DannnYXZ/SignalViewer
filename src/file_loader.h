@@ -21,7 +21,7 @@ char *load_file(char *filepath) {
         is.read(buffer, length);
         is.close();
         // print content:
-        cout.write(buffer, length);
+        //cout.write(buffer, length);
     }
     return buffer;
 }

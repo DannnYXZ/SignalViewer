@@ -69,8 +69,6 @@ struct {
     int transparent_background = GLFW_FALSE; // GLFW_FALSE
 } global_settings;
 
-static vector<char *> file_names;
-
 int main() {
     glfwSetErrorCallback(error_callback);
     glfwInit();
@@ -172,55 +170,19 @@ int main() {
         ImGui::ShowDemoWindow(&show_demo_window);
 
         {
-
-            static bool show_app_documents = false;
-            static bool show_app_main_menu_bar = false;
-            static bool show_app_console = false;
-            static bool show_app_log = false;
-            static bool show_app_layout = false;
-            static bool show_app_property_editor = false;
-            static bool show_app_long_text = false;
-            static bool show_app_auto_resize = false;
-            static bool show_app_constrained_resize = false;
-            static bool show_app_simple_overlay = false;
-            static bool show_app_window_titles = false;
-            static bool show_app_custom_rendering = false;
-
             static bool p_open = NULL;
             ImGuiWindowFlags window_flags = 0;
             window_flags |= ImGuiWindowFlags_MenuBar;
             ImGui::Begin("Signal Data", &p_open, window_flags);
-
-
             if (ImGui::BeginMenuBar()) {
-                if (ImGui::BeginMenu("Menu")) {
-                    ShowExampleMenuFile(file_names);
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Examples")) {
-                    ImGui::MenuItem("Main menu bar", NULL, &show_app_main_menu_bar);
-                    ImGui::MenuItem("Console", NULL, &show_app_console);
-                    ImGui::MenuItem("Log", NULL, &show_app_log);
-                    ImGui::MenuItem("Simple layout", NULL, &show_app_layout);
-                    ImGui::MenuItem("Property editor", NULL, &show_app_property_editor);
-                    ImGui::MenuItem("Long text display", NULL, &show_app_long_text);
-                    ImGui::MenuItem("Auto-resizing window", NULL, &show_app_auto_resize);
-                    ImGui::MenuItem("Constrained-resizing window", NULL, &show_app_constrained_resize);
-                    ImGui::MenuItem("Simple overlay", NULL, &show_app_simple_overlay);
-                    ImGui::MenuItem("Manipulating window titles", NULL, &show_app_window_titles);
-                    ImGui::MenuItem("Custom rendering", NULL, &show_app_custom_rendering);
-                    ImGui::MenuItem("Documents", NULL, &show_app_documents);
+                if (ImGui::BeginMenu("File")) {
+                    ShowFileMenu();
                     ImGui::EndMenu();
                 }
                 ImGui::EndMenuBar();
             }
-
-            static int listbox_item_current = 1;
-            char **listbox_items = file_names.data();
-            if (listbox_items)
-                ImGui::ListBox("listbox\n(single select)", &listbox_item_current, listbox_items, file_names.size(), 4);
+            show_signal_groups(&signal_views);
             ImGui::End();
-
         }
 
         ImGui::Render();
