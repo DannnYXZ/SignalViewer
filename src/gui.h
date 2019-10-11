@@ -44,26 +44,44 @@ static void add_files(int group_id) {
 static void show_signal_group(signal_view *view, int group_id) {
     ImGui::BeginGroup();
     if (ImGui::CollapsingHeader(("Group " + to_string(group_id)).c_str(), &view->keep)) {
-        static int listbox_item_current = 0;
         //char **listbox_items = view->file_names.data();
         ImGui::PushItemWidth(-1);
         if (!view->file_names.empty()) {
             ImGui::ListBox(("##" + to_string(group_id)).c_str(),
-                           &listbox_item_current,
+                           &view->current_item,
                            vector_of_strings_getter,
                            (void *) &view->file_names,
                            view->file_names.size(),
                            -1);
-            ImVec2 size{20.0f, 20.0f};
-            if (ImGui::Button("+", size)) {
-                add_files(group_id);
+        }
+        ImVec2 size{20.0f, 20.0f};
+        if (ImGui::Button("+", size)) {
+            add_files(group_id);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("-", size)) {
+            view->file_names.erase(view->file_names.begin() + view->current_item);
+            view->signal_files.erase(view->signal_files.begin() + view->current_item);
+            view->current_item = std::max(0, view->current_item - 1);
+            // ignoring outher loop skip next view single frame
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("<", size)) {
+            int index = view->current_item;
+            if (index - 1 >= 0) {
+                swap(view->file_names[index], view->file_names[index - 1]);
+                swap(view->signal_files[index], view->signal_files[index - 1]);
+                view->current_item--;
             }
-            ImGui::SameLine();
-            ImGui::Button("-", size);
-            ImGui::SameLine();
-            ImGui::Button("<", size);
-            ImGui::SameLine();
-            ImGui::Button(">", size);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(">", size)) {
+            int index = view->current_item;
+            if (index + 1 < view->file_names.size()) {
+                swap(view->file_names[index], view->file_names[index + 1]);
+                swap(view->signal_files[index], view->signal_files[index + 1]);
+                view->current_item++;
+            }
         }
         ImGui::PopItemWidth();
     }

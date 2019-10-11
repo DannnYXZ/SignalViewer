@@ -10,6 +10,7 @@ using namespace std;
 
 struct signal_view {
     bool keep = true;
+    int current_item = 0;
     vector<signal_file *> signal_files;
     vector<const char *> file_names;
     uint VAO;
