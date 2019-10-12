@@ -25,6 +25,7 @@
 #include "nfd.h"
 #include "gui.h"
 #include "signal_struct.h"
+#include "signal_drawer.h"
 
 using namespace glm;
 
@@ -105,11 +106,7 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 130");
     // ==============================================================================
 
-    Shader signal_shader("shaders/signal.vs", "shaders/signal.fs");
-    uint dxUniform = glGetUniformLocation(signal_shader.ID, "dx");
-    uint signal_model_u = glGetUniformLocation(signal_shader.ID, "model");
-    uint signal_view_u = glGetUniformLocation(signal_shader.ID, "view");
-    uint signal_proj_u = glGetUniformLocation(signal_shader.ID, "proj");
+    SignalDrawer *drawer = new SignalDrawer();
 
     glLineWidth(3);
     glEnable(GL_DEPTH_TEST);
@@ -152,15 +149,7 @@ int main() {
         }
 
 
-        mat4 model(1.0f);
-        for (int i = 0; i < signal_views.size(); i++) {
-            signal_shader.use();
-            glUniformMatrix4fv(signal_view_u, 1, GL_FALSE, value_ptr(global_view));
-            glUniformMatrix4fv(signal_proj_u, 1, GL_FALSE, value_ptr(global_proj));
-            glUniformMatrix4fv(signal_model_u, 1, GL_FALSE, value_ptr(model));
-            glUniform1f(dxUniform, 0.1f);
-            draw_signal(signal_views[i]);
-        }
+        drawer->draw_signals(get_signal_views());
 
         // start the ImGui frame
         ImGui_ImplOpenGL3_NewFrame();

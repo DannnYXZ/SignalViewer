@@ -26,8 +26,8 @@ char *load_file(char *filepath) {
     return buffer;
 }
 
-signal_file *load_signal_file(char *filepath) {
-    return reinterpret_cast<signal_file*>(load_file(filepath));
+signal_file_t *load_signal_file(char *filepath) {
+    return reinterpret_cast<signal_file_t*>(load_file(filepath));
 }
 
 #endif //DATAVIEWER_FILE_LOADER_H

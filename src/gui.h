@@ -10,7 +10,7 @@
 #include <string>
 #include "signal_struct.h"
 #include "file_loader.h"
-#include "file_repository/file_repository.h"
+#include "file_repository.h"
 
 using namespace std;
 
@@ -27,10 +27,7 @@ static void add_files(int group_id) {
         size_t i;
         for (i = 0; i < NFD_PathSet_GetCount(&user_path); ++i) {
             nfdchar_t *path = NFD_PathSet_GetPath(&user_path, i);
-            signal_file *sfile = load_signal_file(path);
-            if (sfile) {
-                add_signal_file(sfile, path, group_id);
-            }
+            add_signal_file(path, group_id);
             printf("Path %i: %s\n", (int) i, path);
         }
         NFD_PathSet_Free(&user_path);
@@ -41,10 +38,23 @@ static void add_files(int group_id) {
     }
 }
 
-static void show_signal_group(signal_view *view, int group_id) {
+static void show_info(signal_file_t *signal_file) {
+    ImGui::Text("Data size: %ub", signal_file->data_size);
+    ImGui::Text("Blocks entered: %u", signal_file->n_blocks);
+    ImGui::Text("Blocks captured: %u", signal_file->n_blocks_captured);
+    ImGui::Text("Capture time: %us", signal_file->total_time_s);
+    ImGui::Text("Time per block: %.3fs", signal_file->block_time_s);
+    ImGui::Text("Samples per block: %u", signal_file->samples_per_block);
+    ImGui::Text("Cutoff frequency: %uHz", signal_file->cutoff_freq);
+    ImGui::Text("Spectral lines: %u", signal_file->n_spectra_lines);
+    ImGui::Text("Max value: %.3f", signal_file->max_value);
+    ImGui::Text("Min value: %.3f", signal_file->max_value);
+}
+
+static void show_signal_group(signal_view_t *view, int group_id) {
     ImGui::BeginGroup();
-    if (ImGui::CollapsingHeader(("Group " + to_string(group_id)).c_str(), &view->keep)) {
-        //char **listbox_items = view->file_names.data();
+    if (ImGui::CollapsingHeader(("Group " + to_string(group_id)).c_str(),
+                                &view->keep, ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::PushItemWidth(-1);
         if (!view->file_names.empty()) {
             ImGui::ListBox(("##" + to_string(group_id)).c_str(),
@@ -54,42 +64,49 @@ static void show_signal_group(signal_view *view, int group_id) {
                            view->file_names.size(),
                            -1);
         }
+        ImGui::PopItemWidth();
         ImVec2 size{20.0f, 20.0f};
+        ImGui::PushID(group_id);
         if (ImGui::Button("+", size)) {
             add_files(group_id);
         }
         ImGui::SameLine();
         if (ImGui::Button("-", size)) {
-            view->file_names.erase(view->file_names.begin() + view->current_item);
-            view->signal_files.erase(view->signal_files.begin() + view->current_item);
-            view->current_item = std::max(0, view->current_item - 1);
+            remove_current(view);
             // ignoring outher loop skip next view single frame
         }
         ImGui::SameLine();
         if (ImGui::Button("<", size)) {
-            int index = view->current_item;
-            if (index - 1 >= 0) {
-                swap(view->file_names[index], view->file_names[index - 1]);
-                swap(view->signal_files[index], view->signal_files[index - 1]);
-                view->current_item--;
-            }
+            move_current_up(view);
         }
         ImGui::SameLine();
         if (ImGui::Button(">", size)) {
-            int index = view->current_item;
-            if (index + 1 < view->file_names.size()) {
-                swap(view->file_names[index], view->file_names[index + 1]);
-                swap(view->signal_files[index], view->signal_files[index + 1]);
-                view->current_item++;
-            }
+            move_current_down(view);
         }
-        ImGui::PopItemWidth();
+        ImGui::Separator();
+        ImGui::Text("Channels:");
+        signal_file_t *signal_file = view->signal_files[0];
+        for (int i = 0; i < signal_file->n_channels; i++) {
+            ImGui::PushID(i);
+            // TODO: color formula (mod)
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.6f, 0.6f));
+            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.7f, 0.7f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.8f, 0.8f));
+            ImGui::SameLine();
+            if (ImGui::Button(to_string(i + 1).c_str(), size)) {
+                // TODO: recalc frustum height
+            }
+            ImGui::PopStyleColor(3);
+            ImGui::PopID();
+        }
+        show_info(view->merged_info);
+        ImGui::PopID();
     }
 
     ImGui::EndGroup();
 }
 
-static void show_signal_groups(vector<signal_view *> *views) {
+static void show_signal_groups(vector<signal_view_t *> *views) {
     for (int i = 0; i < views->size(); i++) {
         show_signal_group(signal_views[i], i);
     }
