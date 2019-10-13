@@ -8,7 +8,7 @@
 #include <include/nfd.h>
 #include <vector>
 #include <string>
-#include "signal_struct.h"
+#include "signal_file.h"
 #include "file_loader.h"
 #include "file_repository.h"
 
@@ -43,20 +43,24 @@ static void show_info(signal_file_t *signal_file) {
     ImGui::Text("Blocks entered: %u", signal_file->n_blocks);
     ImGui::Text("Blocks captured: %u", signal_file->n_blocks_captured);
     ImGui::Text("Capture time: %us", signal_file->total_time_s);
-    ImGui::Text("Time per block: %.3fs", signal_file->block_time_s);
+    ImGui::Text("Time per block: %.3fs", signal_file->time_per_block_s);
     ImGui::Text("Samples per block: %u", signal_file->samples_per_block);
     ImGui::Text("Cutoff frequency: %uHz", signal_file->cutoff_freq);
     ImGui::Text("Spectral lines: %u", signal_file->n_spectra_lines);
     ImGui::Text("Max value: %.3f", signal_file->max_value);
-    ImGui::Text("Min value: %.3f", signal_file->max_value);
+    ImGui::Text("Min value: %.3f", signal_file->min_value);
 }
 
-static void show_signal_group(signal_view_t *view, int group_id) {
+static void show_signal_group(signal_group_t *view, int group_id) {
+    if (!view->keep) {
+        remove_group(group_id);
+        return;
+    }
     ImGui::BeginGroup();
     if (ImGui::CollapsingHeader(("Group " + to_string(group_id)).c_str(),
                                 &view->keep, ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::PushItemWidth(-1);
-        if (!view->file_names.empty()) {
+        if (!view->signal_views.empty()) {
             ImGui::ListBox(("##" + to_string(group_id)).c_str(),
                            &view->current_item,
                            vector_of_strings_getter,
@@ -83,32 +87,34 @@ static void show_signal_group(signal_view_t *view, int group_id) {
         if (ImGui::Button(">", size)) {
             move_current_down(view);
         }
-        ImGui::Separator();
-        ImGui::Text("Channels:");
-        signal_file_t *signal_file = view->signal_files[0];
-        for (int i = 0; i < signal_file->n_channels; i++) {
-            ImGui::PushID(i);
-            // TODO: color formula (mod)
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.6f, 0.6f));
-            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.7f, 0.7f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.8f, 0.8f));
-            ImGui::SameLine();
-            if (ImGui::Button(to_string(i + 1).c_str(), size)) {
-                // TODO: recalc frustum height
+        if (!view->signal_files.empty()) {
+            ImGui::Separator();
+            ImGui::Text("Channels:");
+            signal_file_t *signal_file = view->signal_files[0];
+            for (int i = 0; i < signal_file->n_channels; i++) {
+                ImGui::PushID(i);
+                // TODO: color formula (mod)
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.6f, 0.6f));
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.7f, 0.7f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.8f, 0.8f));
+                ImGui::SameLine();
+                if (ImGui::Button(to_string(i + 1).c_str(), size)) {
+                    // TODO: recalc frustum height
+                }
+                ImGui::PopStyleColor(3);
+                ImGui::PopID();
             }
-            ImGui::PopStyleColor(3);
-            ImGui::PopID();
+            show_info(view->merged_info);
         }
-        show_info(view->merged_info);
         ImGui::PopID();
     }
 
     ImGui::EndGroup();
 }
 
-static void show_signal_groups(vector<signal_view_t *> *views) {
+static void show_signal_groups(vector<signal_group_t *> *views) {
     for (int i = 0; i < views->size(); i++) {
-        show_signal_group(signal_views[i], i);
+        show_signal_group(signal_groups[i], i);
     }
 }
 

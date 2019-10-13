@@ -23,6 +23,8 @@ private:
     vec2 scale{1, 1};
 public:
 
+    TimelineOrthoController() {}
+
     TimelineOrthoController(int scr_width, int scr_height) : scr_height(scr_height), scr_width(scr_width) {
     }
 

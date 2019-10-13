@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
-#include "signal_struct.h"
+#include "signal_file.h"
 
 using namespace std;
 

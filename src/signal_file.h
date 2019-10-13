@@ -1,5 +1,5 @@
-#ifndef DATAVIEWER_SIGNAL_STRUCT_H
-#define DATAVIEWER_SIGNAL_STRUCT_H
+#ifndef DATAVIEWER_SIGNAL_FILE_H
+#define DATAVIEWER_SIGNAL_FILE_H
 
 #include <cstdint>
 
@@ -10,7 +10,7 @@ struct signal_file_t {
     uint32_t n_spectra_lines = 0;
     uint32_t cutoff_freq = 0;
     float spectra_step_hz = 0;
-    float block_time_s = 0;
+    float time_per_block_s = 0;
     uint32_t total_time_s = 0;
     uint32_t n_blocks = 0;
     uint32_t data_size = 0;
@@ -20,4 +20,4 @@ struct signal_file_t {
     float data[];
 };
 
-#endif //DATAVIEWER_SIGNAL_STRUCT_H
+#endif //DATAVIEWER_SIGNAL_FILE_H

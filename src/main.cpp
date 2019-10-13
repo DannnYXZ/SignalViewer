@@ -24,7 +24,7 @@
 #include "portable-file-dialogs.h"
 #include "nfd.h"
 #include "gui.h"
-#include "signal_struct.h"
+#include "signal_file.h"
 #include "signal_drawer.h"
 
 using namespace glm;
@@ -149,7 +149,7 @@ int main() {
         }
 
 
-        drawer->draw_signals(get_signal_views());
+        drawer->draw_signal_views(get_signal_views());
 
         // start the ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -170,7 +170,7 @@ int main() {
                 }
                 ImGui::EndMenuBar();
             }
-            show_signal_groups(&signal_views);
+            show_signal_groups(&signal_groups);
             ImGui::End();
         }
 

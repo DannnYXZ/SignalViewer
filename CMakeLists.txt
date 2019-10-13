@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_executable(DataViewer src/main.cpp
         deps/glad/glad.c
-        src/signal_struct.h
+        src/signal_file.h
         src/file_loader.h
         deps/imgui/imgui.cpp
         deps/imgui/imgui_draw.cpp
