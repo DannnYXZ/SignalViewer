@@ -69,6 +69,10 @@ public:
                      -scr_height / 2.0f * scale.y,
                      scr_height / 2.0f * scale.y, 0.1f, -100.f);
     }
+
+    void set_frustum_h(float h) {
+        scr_height = (float) h;
+    }
 };
 
 #endif //CG_TIMELINE_ORTHO_CONTROLLER_H

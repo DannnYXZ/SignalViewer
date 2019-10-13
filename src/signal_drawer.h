@@ -17,13 +17,12 @@ public:
         u_model = glGetUniformLocation(signal_shader->ID, "model");
         u_view = glGetUniformLocation(signal_shader->ID, "view");
         u_proj = glGetUniformLocation(signal_shader->ID, "proj");
-        ortho_controller = new TimelineOrthoController();
+        ortho_controller = new TimelineOrthoController(800, 800); // TODO: deside
     }
 
     void draw_signal_group(signal_group_t *group) {
         float offset = 0;
-        for (int i = 0; i < group->signal_views.size(); i++) {
-            signal_view_t *signal_view;
+        for (auto signal_view : group->signal_views) {
             glBindVertexArray(signal_view->vao);
             glUniform1f(u_offset, offset);
             glUniform1f(u_dx, signal_view->signal_file->time_per_block_s / signal_view->signal_file->samples_per_block);
@@ -41,6 +40,18 @@ public:
         for (auto group : *groups) {
             draw_signal_group(group);
         }
+    }
+
+    void processKey(int key, float deltatime) {
+        ortho_controller->processKey(key, deltatime);
+    }
+
+    void mouseScroll(double xoffset, double yoffset) {
+        ortho_controller->mouseScroll(xoffset, yoffset);
+    }
+
+    void zoom(float height) {
+        ortho_controller->set_frustum_h(height);
     }
 };
 

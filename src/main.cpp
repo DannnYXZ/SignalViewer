@@ -52,6 +52,8 @@ FPSCameraController fps_controller(&fps_camera);
 ArcballCamera arcball_camera(identity<quat>(), vec3(0, 0, 0), vec3(0, 0, 5));
 ArcballCameraController arcball_controller(&arcball_camera, SCR_WIDTH, SCR_HEIGHT);
 TimelineOrthoController ortho_controller(SCR_WIDTH, SCR_HEIGHT);
+SignalDrawer *signal_drawer;
+
 float timestamp;
 float loop_deltatime;
 double last_mouse_x, last_mouse_y;
@@ -106,9 +108,8 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 130");
     // ==============================================================================
 
-    SignalDrawer *drawer = new SignalDrawer();
-
-    glLineWidth(3);
+    signal_drawer = new SignalDrawer();
+    glLineWidth(1);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -149,7 +150,7 @@ int main() {
         }
 
 
-        drawer->draw_signal_groups(get_signal_views());
+        signal_drawer->draw_signal_groups(get_signal_views());
 
         // start the ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -235,6 +236,7 @@ static void process_input(GLFWwindow *window) {
         if (glfwGetKey(window, trackable_key) == GLFW_PRESS) {
             fps_controller.processKey(trackable_key, loop_deltatime);
             ortho_controller.processKey(trackable_key, loop_deltatime);
+            signal_drawer->processKey(trackable_key, loop_deltatime);
         }
     }
 }
@@ -262,7 +264,8 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action, in
 
 static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     arcball_controller.mouseScroll(xoffset, yoffset);
-    ortho_controller.mouseScroll(xoffset, yoffset);
+    //ortho_controller.mouseScroll(xoffset, yoffset);
+    signal_drawer->mouseScroll(xoffset, yoffset);
     //FOV += 1.f * yoffset;
     //SCR_WIDTH += 10 * yoffset;
     //SCR_HEIGHT += 10 * xoffset;
