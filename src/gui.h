@@ -14,12 +14,6 @@
 
 using namespace std;
 
-static bool vector_of_strings_getter(void *data, int n, const char **out_text) {
-    auto *v = (vector<const char *> *) data;
-    *out_text = (*v)[n];
-    return true;
-}
-
 static void add_files(int group_id) {
     nfdpathset_t user_path;
     nfdresult_t result = NFD_OpenDialogMultiple("bin1;png,jpg;pdf", NULL, &user_path);
@@ -51,21 +45,27 @@ static void show_info(signal_file_t *signal_file) {
     ImGui::Text("Min value: %.3f", signal_file->min_value);
 }
 
-static void show_signal_group(signal_group_t *view, int group_id) {
-    if (!view->keep) {
+static bool vector_of_strings_getter(void *data, int n, const char **out_text) {
+    auto *v = (vector<signal_view_t *> *) data;
+    *out_text = (*v)[n]->file_name;
+    return true;
+}
+
+static void show_signal_group(signal_group_t *group, int group_id) {
+    if (!group->keep) {
         remove_group(group_id);
         return;
     }
     ImGui::BeginGroup();
     if (ImGui::CollapsingHeader(("Group " + to_string(group_id)).c_str(),
-                                &view->keep, ImGuiTreeNodeFlags_DefaultOpen)) {
+                                &group->keep, ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::PushItemWidth(-1);
-        if (!view->signal_views.empty()) {
+        if (!group->signal_views.empty()) {
             ImGui::ListBox(("##" + to_string(group_id)).c_str(),
-                           &view->current_item,
+                           &group->current_item,
                            vector_of_strings_getter,
-                           (void *) &view->file_names,
-                           view->file_names.size(),
+                           (void *) &group->signal_views,
+                           group->signal_views.size(),
                            -1);
         }
         ImGui::PopItemWidth();
@@ -76,21 +76,21 @@ static void show_signal_group(signal_group_t *view, int group_id) {
         }
         ImGui::SameLine();
         if (ImGui::Button("-", size)) {
-            remove_current(view);
+            remove_current(group);
             // ignoring outher loop skip next view single frame
         }
         ImGui::SameLine();
         if (ImGui::Button("<", size)) {
-            move_current_up(view);
+            move_current_up(group);
         }
         ImGui::SameLine();
         if (ImGui::Button(">", size)) {
-            move_current_down(view);
+            move_current_down(group);
         }
-        if (!view->signal_files.empty()) {
+        if (!group->signal_views.empty()) {
             ImGui::Separator();
             ImGui::Text("Channels:");
-            signal_file_t *signal_file = view->signal_files[0];
+            signal_file_t *signal_file = group->signal_views[0]->signal_file;
             for (int i = 0; i < signal_file->n_channels; i++) {
                 ImGui::PushID(i);
                 // TODO: color formula (mod)
@@ -104,7 +104,7 @@ static void show_signal_group(signal_group_t *view, int group_id) {
                 ImGui::PopStyleColor(3);
                 ImGui::PopID();
             }
-            show_info(view->merged_info);
+            show_info(group->merged_info);
         }
         ImGui::PopID();
     }

@@ -9,7 +9,7 @@
 using namespace std;
 
 struct signal_view_t {
-    const char *file_name;
+    char *file_name;
     signal_file_t *signal_file;
     uint vao;
 };
@@ -17,7 +17,7 @@ struct signal_view_t {
 struct signal_group_t {
     bool keep = true;
     int current_item = 0;
-    vector<signal_view_t> signal_views;
+    vector<signal_view_t *> signal_views;
     vector<ImVec4> channel_colors;
     signal_file_t *merged_info;
 };
@@ -33,7 +33,7 @@ void recalc_merged_signal_info(signal_group_t *group) {
     merged_info->total_time_s = 0;
     memset(merged_info, 0, sizeof(signal_file_t));
     for (auto &signal_view : group->signal_views) {
-        signal_file_t *curr_signal_file = signal_view.signal_file;
+        signal_file_t *curr_signal_file = signal_view->signal_file;
         merged_info->total_time_s += curr_signal_file->total_time_s;
         merged_info->n_blocks += curr_signal_file->n_blocks;
         merged_info->n_blocks_captured += curr_signal_file->n_blocks_captured;
@@ -104,14 +104,14 @@ void add_signal_file(char *filepath, int group) {
     char *base_name = strdup(basename(filepath));
     if (group == -1) {
         auto *signal_group = new signal_group_t();
-        signal_group->signal_views.push_back(signal_view_t{base_name, file, signalVAO});
+        signal_group->signal_views.push_back(new signal_view_t{base_name, file, signalVAO});
         signal_group->merged_info = new signal_file_t();
         recalc_merged_signal_info(signal_group);
         signal_groups.push_back(signal_group);
     } else {
         if (signal_groups[group]->signal_views.empty()
-            || compatible(signal_groups[group]->signal_views[0].signal_file, file)) {
-            signal_groups[group]->signal_views.push_back(signal_view_t{base_name, file, signalVAO});
+            || compatible(signal_groups[group]->signal_views[0]->signal_file, file)) {
+            signal_groups[group]->signal_views.push_back(new signal_view_t{base_name, file, signalVAO});
             recalc_merged_signal_info(signal_groups[group]);
         } else {
             // TODO: what to do?

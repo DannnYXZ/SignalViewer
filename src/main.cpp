@@ -149,7 +149,7 @@ int main() {
         }
 
 
-        drawer->draw_signal_views(get_signal_views());
+        drawer->draw_signal_groups(get_signal_views());
 
         // start the ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
