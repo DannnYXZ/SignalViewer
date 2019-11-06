@@ -109,7 +109,7 @@ int main() {
     // ==============================================================================
 
     signal_drawer = new SignalDrawer();
-    glLineWidth(1);
+    glLineWidth(2);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -157,7 +157,7 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow(&show_demo_window);
+        // ImGui::ShowDemoWindow(&show_demo_window);
 
         {
             static bool p_open = NULL;

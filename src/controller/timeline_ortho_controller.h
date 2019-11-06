@@ -11,7 +11,7 @@ class TimelineOrthoController {
     float EPS = 1e-6;
     float MOUSE_SENS = 3.f;
     float MOVE_SPEED = 10.0f;
-    float SCALE_SPEED = 0.001f;
+    float SCALE_SPEED = 0.1f;
 private:
     // ArcballCamera *camera;
     quat saved_rot;
@@ -44,7 +44,7 @@ public:
     }
 
     void mouseScroll(double xoffset, double yoffset) {
-        scale += vec2(xoffset * SCALE_SPEED, yoffset * SCALE_SPEED);
+        scale += vec2(2.0 * xoffset * SCALE_SPEED, yoffset * SCALE_SPEED);
         print(vec3(scale, 1));
     }
 
@@ -64,10 +64,10 @@ public:
     }
 
     mat4 proj() {
-        return ortho(-scr_width / 2.0f * scale.x,
-                     scr_width / 2.0f * scale.x,
-                     -scr_height / 2.0f * scale.y,
-                     scr_height / 2.0f * scale.y, 0.1f, -100.f);
+        return ortho(-scr_width / 2.0f / scale.x,
+                     scr_width / 2.0f / scale.x,
+                     -scr_height / 2.0f / scale.y,
+                     scr_height / 2.0f / scale.y, 0.1f, -100.f);
     }
 
     void set_frustum_h(float h) {

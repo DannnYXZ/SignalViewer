@@ -17,7 +17,7 @@ public:
         u_model = glGetUniformLocation(signal_shader->ID, "model");
         u_view = glGetUniformLocation(signal_shader->ID, "view");
         u_proj = glGetUniformLocation(signal_shader->ID, "proj");
-        ortho_controller = new TimelineOrthoController(800, 800); // TODO: deside
+        ortho_controller = new TimelineOrthoController(10, 10); // TODO: deside
     }
 
     void draw_signal_group(signal_group_t *group) {

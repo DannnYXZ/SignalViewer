@@ -95,6 +95,7 @@ void add_signal_file(char *filepath, int group) {
     glBindBuffer(GL_VERTEX_ARRAY, signalBAO);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(4 * file->data_size), file->data, GL_STATIC_DRAW);
+    // TODO: channels attrib
     glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 4, file->data);
     glEnableVertexAttribArray(0);
 
