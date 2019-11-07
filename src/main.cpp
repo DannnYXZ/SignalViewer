@@ -26,6 +26,7 @@
 #include "gui.h"
 #include "signal_file.h"
 #include "signal_drawer.h"
+#include "serial_com.h"
 
 using namespace glm;
 
@@ -108,6 +109,8 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 130");
     // ==============================================================================
 
+    serial_com_init("ttyUSB0");
+
     signal_drawer = new SignalDrawer();
     glLineWidth(2);
     glEnable(GL_DEPTH_TEST);
@@ -151,6 +154,7 @@ int main() {
 
 
         signal_drawer->draw_signal_groups(get_signal_views());
+        signal_drawer->draw_rolling_signal(rolling_samples, rolling_index, ROLLING_BUFFER_LEN, rollingVAO, rollingBAO);
 
         // start the ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
