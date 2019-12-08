@@ -15,19 +15,16 @@ char *load_file(char *filepath) {
         is.seekg(0, is.end);
         int length = is.tellg();
         is.seekg(0, is.beg);
-        // allocate memory:
         buffer = new char[length];
-        // read data as a block:
         is.read(buffer, length);
         is.close();
-        // print content:
         //cout.write(buffer, length);
     }
     return buffer;
 }
 
 signal_file_t *load_signal_file(char *filepath) {
-    return reinterpret_cast<signal_file_t*>(load_file(filepath));
+    return reinterpret_cast<signal_file_t *>(load_file(filepath));
 }
 
 #endif //DATAVIEWER_FILE_LOADER_H

@@ -11,6 +11,7 @@
 #include "signal_file.h"
 #include "file_loader.h"
 #include "file_repository.h"
+#include "signal_drawer.h"
 
 using namespace std;
 
@@ -51,7 +52,7 @@ static bool vector_of_strings_getter(void *data, int n, const char **out_text) {
     return true;
 }
 
-static void show_signal_group(signal_group_t *group, int group_id) {
+static void show_signal_group(signal_group_t *group, int group_id, SignalDrawer *signal_drawer) {
     if (!group->keep) {
         remove_group(group_id);
         return;
@@ -100,6 +101,7 @@ static void show_signal_group(signal_group_t *group, int group_id) {
                 ImGui::SameLine();
                 if (ImGui::Button(to_string(i + 1).c_str(), size)) {
                     // TODO: recalc frustum height
+                    signal_drawer->zoom(signal_file->max_value);
                 }
                 ImGui::PopStyleColor(3);
                 ImGui::PopID();
@@ -112,9 +114,9 @@ static void show_signal_group(signal_group_t *group, int group_id) {
     ImGui::EndGroup();
 }
 
-static void show_signal_groups(vector<signal_group_t *> *views) {
+static void show_signal_groups(vector<signal_group_t *> *views, SignalDrawer *signal_drawer) {
     for (int i = 0; i < views->size(); i++) {
-        show_signal_group(signal_groups[i], i);
+        show_signal_group(signal_groups[i], i, signal_drawer);
     }
 }
 
@@ -143,5 +145,20 @@ static void ShowFileMenu() {
     if (ImGui::MenuItem("Quit", "Alt+F4")) {}
 }
 
+static void draw_signal_manager(SignalDrawer *signal_drawer) {
+    static bool p_open = NULL;
+    ImGuiWindowFlags window_flags = 0;
+    window_flags |= ImGuiWindowFlags_MenuBar;
+    ImGui::Begin("Signal Data", &p_open, window_flags);
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            ShowFileMenu();
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+    show_signal_groups(&signal_groups, signal_drawer);
+    ImGui::End();
+}
 
 #endif //DATAVIEWER_GUI_H

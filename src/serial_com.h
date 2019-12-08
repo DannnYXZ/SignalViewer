@@ -18,8 +18,9 @@
 using namespace std;
 
 //const int ROLLING_BUFFER_LEN = 1024 * 1024;
-const int ROLLING_BUFFER_LEN = 512;
-const float FACTOR = 512. * 512.;
+const int ROLLING_BUFFER_LEN = 2048;
+const float FACTOR = 512. * 512. * 5;
+//const float FACTOR = 200000.;
 
 float *rolling_samples;
 int rolling_index = 0;
@@ -38,6 +39,10 @@ void *fill_buffer(void *port) {
         rolling_samples[rolling_index++] = x / FACTOR;
         rolling_index %= ROLLING_BUFFER_LEN;
     }
+    close(rolling_serial_port);
+}
+
+void rolling_signal_destroy() {
     close(rolling_serial_port);
 }
 

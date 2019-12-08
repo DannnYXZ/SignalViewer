@@ -68,8 +68,9 @@ void move_current_down(signal_group_t *group) {
 }
 
 void remove_current(signal_group_t *group) {
-    group->signal_views.erase(group->signal_views.begin() + group->current_item);
-    group->current_item = std::max(0, group->current_item - 1);
+    if (group->current_item >= 0) {
+        group->signal_views.erase(group->signal_views.begin() + group->current_item--);
+    }
     recalc_merged_signal_info(group);
 }
 

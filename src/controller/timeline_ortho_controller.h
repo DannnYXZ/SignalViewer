@@ -10,32 +10,28 @@ using namespace std;
 class TimelineOrthoController {
     float EPS = 1e-6;
     float MOUSE_SENS = 3.f;
-    float MOVE_SPEED = 10.0f;
-    float SCALE_SPEED = 0.1f;
+    float MOVE_SPEED = 1.f;
+    float SCALE_SPEED = 0.01f;
+    float FIDELITY = 1e-9f;
 private:
-    // ArcballCamera *camera;
-    quat saved_rot;
-    //int &scr_width, &scr_height;
-    int scr_width, scr_height;
+    quat saved_rot{};
     vec2 last_mv{0, 0};
     bool drag_on = false;
     vec3 v_trans{0, 0, 0};
-    vec2 scale{1, 1};
+    vec2 scale{};
 public:
 
-    TimelineOrthoController() {}
+    TimelineOrthoController() = default;
 
-    TimelineOrthoController(int scr_width, int scr_height) : scr_height(scr_height), scr_width(scr_width) {
+    explicit TimelineOrthoController(vec2 scale) : scale(scale) {
     }
 
     void mouseMove(double xpos, double ypos) {
-
     }
 
     void mouseButton(int button, int action, int mods, double x, double y) {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             drag_on = true;
-            // saved_rot = quat(camera->orient);
             last_mv = vec2(x, y);
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
@@ -43,20 +39,18 @@ public:
         }
     }
 
-    void mouseScroll(double xoffset, double yoffset) {
-        scale += vec2(2.0 * xoffset * SCALE_SPEED, yoffset * SCALE_SPEED);
+    void process_scroll(double xoffset, double yoffset) {
+        xoffset != 0 ? scale.x *= 1 + sign(xoffset) * SCALE_SPEED : scale.x = scale.x;
+        yoffset != 0 ? scale.y *= 1 + sign(yoffset) * SCALE_SPEED : scale.y = scale.y;
+        scale = max(vec2(FIDELITY), scale);
         print(vec3(scale, 1));
     }
 
-    void processKey(int key, float deltatime) {
-        if (key == GLFW_KEY_W)
-            v_trans += vec3(0, 0, 1) * MOVE_SPEED * deltatime;
+    void process_key(int key, float deltatime) {
         if (key == GLFW_KEY_A)
-            v_trans += vec3(-1, 0, 0) * MOVE_SPEED * (1 / scale.x) * deltatime;
-        if (key == GLFW_KEY_S)
-            v_trans += vec3(0, 0, -1) * MOVE_SPEED * deltatime;
+            v_trans += vec3(-1, 0, 0) * MOVE_SPEED * scale.x * deltatime;
         if (key == GLFW_KEY_D)
-            v_trans += vec3(1, 0, 0) * MOVE_SPEED * (1 / scale.x) * deltatime;
+            v_trans += vec3(1, 0, 0) * MOVE_SPEED * scale.x * deltatime;
     }
 
     mat4 view() {
@@ -64,14 +58,22 @@ public:
     }
 
     mat4 proj() {
-        return ortho(-scr_width / 2.0f / scale.x,
-                     scr_width / 2.0f / scale.x,
-                     -scr_height / 2.0f / scale.y,
-                     scr_height / 2.0f / scale.y, 0.1f, -100.f);
+        return ortho(-scale.x,
+                     scale.x,
+                     -scale.y,
+                     scale.y, 1.f, -1.f);
     }
 
     void set_frustum_h(float h) {
-        scr_height = (float) h;
+        scale.y = (float) h;
+    }
+
+    vec2 &get_wnd() {
+        return scale;
+    }
+
+    vec3 &get_pos() {
+        return v_trans;
     }
 };
 

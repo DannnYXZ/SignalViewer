@@ -3,22 +3,35 @@
 
 #include "file_repository.h"
 #include "shader.h"
+#include "serial_com.h"
 
 class SignalDrawer {
 private:
-    Shader *signal_shader;
+    Shader *shader_signal, *shader_adaptive_grid;
     TimelineOrthoController *ortho_controller;
+    FPSCameraController *fps_controller;
     uint u_dx, u_model, u_view, u_proj, u_offset, u_base_index;
+    uint u_res, u_wnd_p, u_wnd_a;
+    uint quadVAO, quadVBO;
+    vec2 &resolution;
 public:
-    SignalDrawer() {
-        signal_shader = new Shader("shaders/signal.vs", "shaders/signal.fs");
-        u_dx = glGetUniformLocation(signal_shader->ID, "dx");
-        u_offset = glGetUniformLocation(signal_shader->ID, "offset");
-        u_model = glGetUniformLocation(signal_shader->ID, "model");
-        u_view = glGetUniformLocation(signal_shader->ID, "view");
-        u_proj = glGetUniformLocation(signal_shader->ID, "proj");
-        u_base_index = glGetUniformLocation(signal_shader->ID, "base_index");
-        ortho_controller = new TimelineOrthoController(10, 10); // TODO: deside
+    SignalDrawer(vec2 &resolution) : resolution(resolution) {
+        shader_signal = new Shader("shaders/signal.vs", "shaders/signal.fs");
+        shader_adaptive_grid = new Shader("shaders/adaptive_grid.vs", "shaders/adaptive_grid.fs");
+        u_dx = glGetUniformLocation(shader_signal->ID, "dx");
+        u_offset = glGetUniformLocation(shader_signal->ID, "offset");
+        u_model = glGetUniformLocation(shader_signal->ID, "model");
+        u_view = glGetUniformLocation(shader_signal->ID, "view");
+        u_proj = glGetUniformLocation(shader_signal->ID, "proj");
+
+        u_res = glGetUniformLocation(shader_adaptive_grid->ID, "resolution");
+        u_wnd_p = glGetUniformLocation(shader_adaptive_grid->ID, "wnd_p");
+        u_wnd_a = glGetUniformLocation(shader_adaptive_grid->ID, "wnd_a");
+
+        glGenVertexArrays(1, &quadVAO);
+
+        ortho_controller = new TimelineOrthoController(vec2{1, 1});
+        fps_controller = new FPSCameraController(new FPSCamera(vec3(0, 0, 3)), resolution);
     }
 
     void draw_signal_group(signal_group_t *group) {
@@ -33,18 +46,30 @@ public:
     }
 
     void draw_signal_groups(const vector<signal_group_t *> *groups) {
-        signal_shader->use();
+        shader_signal->use();
         mat4 model(1.0f);
         glUniformMatrix4fv(u_view, 1, GL_FALSE, value_ptr(ortho_controller->view()));
         glUniformMatrix4fv(u_proj, 1, GL_FALSE, value_ptr(ortho_controller->proj()));
+//        glUniformMatrix4fv(u_view, 1, GL_FALSE, value_ptr(fps_controller->view()));
+//        glUniformMatrix4fv(u_proj, 1, GL_FALSE, value_ptr(fps_controller->proj()));
         glUniformMatrix4fv(u_model, 1, GL_FALSE, value_ptr(model));
         for (auto group : *groups) {
             draw_signal_group(group);
         }
     }
 
+    void draw_grid() {
+        shader_adaptive_grid->use();
+        glUniform2fv(u_res, 1, value_ptr(resolution));
+        glUniform2fv(u_wnd_p, 1, value_ptr(ortho_controller->get_pos()));
+        glUniform2fv(u_wnd_a, 1, value_ptr(ortho_controller->get_wnd()));
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+    }
+
     void draw_rolling_signal(float *rolling_buffer, int index, int buffer_size, uint rollingVAO, uint rollingBAO) {
-        signal_shader->use();
+        shader_signal->use();
         mat4 model(1.0f);
         glUniformMatrix4fv(u_view, 1, GL_FALSE, value_ptr(ortho_controller->view()));
         glUniformMatrix4fv(u_proj, 1, GL_FALSE, value_ptr(ortho_controller->proj()));
@@ -66,12 +91,18 @@ public:
         glBindVertexArray(0);
     }
 
-    void processKey(int key, float deltatime) {
-        ortho_controller->processKey(key, deltatime);
+    void process_key(int key, float deltatime) {
+        ortho_controller->process_key(key, deltatime);
+        fps_controller->process_key(key, deltatime);
     }
 
-    void mouseScroll(double xoffset, double yoffset) {
-        ortho_controller->mouseScroll(xoffset, yoffset);
+    void process_mouse(float dx, float dy) {
+        fps_controller->process_mouse(dx, dy);
+    }
+
+    void process_scroll(double xoffset, double yoffset) {
+        ortho_controller->process_scroll(xoffset, yoffset);
+        fps_controller->process_scroll(xoffset, yoffset);
     }
 
     void zoom(float height) {

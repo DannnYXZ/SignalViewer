@@ -14,11 +14,8 @@
 #include <imgui_internal.h>
 
 #include "shader.h"
-#include "camera/look_at_camera.h"
 #include "camera/fps_camera.h"
 #include "controller/fps_camera_controller.h"
-#include "camera/arcball_camera.h"
-#include "controller/arcball_camera_controller.h"
 #include "controller/timeline_ortho_controller.h"
 #include "utils.h"
 #include "portable-file-dialogs.h"
@@ -29,9 +26,6 @@
 #include "serial_com.h"
 
 using namespace glm;
-
-int SCR_WIDTH = 800;
-int SCR_HEIGHT = 800;
 
 static void error_callback(int error, const char *description);
 
@@ -47,31 +41,19 @@ static void process_input(GLFWwindow *window);
 
 static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
-LookAtCamera look_at_camera(vec3(0, 0, 3), vec3(0, 0, 0), vec3(0, 1, 0));
-FPSCamera fps_camera(vec3(0, 0, 3));
-FPSCameraController fps_controller(&fps_camera);
-ArcballCamera arcball_camera(identity<quat>(), vec3(0, 0, 0), vec3(0, 0, 5));
-ArcballCameraController arcball_controller(&arcball_camera, SCR_WIDTH, SCR_HEIGHT);
-TimelineOrthoController ortho_controller(SCR_WIDTH, SCR_HEIGHT);
-SignalDrawer *signal_drawer;
-
-float timestamp;
-float loop_deltatime;
-double last_mouse_x, last_mouse_y;
-int frames_cnt = 0;
-double last_fps_time = 0;
-float FOV = 45.f;
-
-mat4 global_view;
-mat4 global_proj;
-
 struct {
+    vec2 resolution{800, 800};
     GLenum polygon_mode = GL_FILL;
+    float line_width = 3;
     bool drawPoints = true;
     int cursor_type = GLFW_CURSOR_NORMAL; // GLFW_CURSOR_DISABLED
     bool start_maximized = true;
-    int transparent_background = GLFW_FALSE; // GLFW_FALSE
+    int transparent_background = GLFW_FALSE; // GLFW_TRUE
 } global_settings;
+
+float prev_time;
+float loop_deltatime;
+SignalDrawer *signal_drawer;
 
 int main() {
     glfwSetErrorCallback(error_callback);
@@ -80,7 +62,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, global_settings.transparent_background);
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow((int) global_settings.resolution.x,
+                                          (int) global_settings.resolution.y,
+                                          "OpenGL", NULL, NULL);
     if (global_settings.start_maximized) glfwMaximizeWindow(window);
     if (window == nullptr) {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -101,92 +85,60 @@ int main() {
     // setup ImGui context
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
-    (void) io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsDark();
     // setup platform/renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
-    // ==============================================================================
+//    ==============================================================================
 
-    serial_com_init("ttyUSB0");
+//    serial_com_init("ttyUSB0");
 
-    signal_drawer = new SignalDrawer();
-    glLineWidth(2);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_PROGRAM_POINT_SIZE);
+    signal_drawer = new SignalDrawer(global_settings.resolution);
+    glLineWidth(global_settings.line_width);
+//    glEnable(GL_DEPTH_TEST);
+//    glEnable(GL_PROGRAM_POINT_SIZE);
 
     bool show_demo_window = true;
     bool show_another_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     while (!glfwWindowShouldClose(window)) {
-        //glClearColor(1.f * 57 / 255, 1.f * 57 / 255, 1.f * 57 / 255, 0.5f);
+//        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         if (global_settings.transparent_background) glClearColor(0.f, 0.f, 0.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, global_settings.polygon_mode);
 
         // time stuff
         double time = glfwGetTime();
-        loop_deltatime = time - timestamp;
-        timestamp = time;
+        loop_deltatime = time - prev_time;
+        prev_time = time;
 
-        // calculating MVP
-        //global_view = fps_camera.view();
-        //global_view = arcball_camera.view();
-        global_view = ortho_controller.view();
+        signal_drawer->draw_grid();
+        signal_drawer->draw_signal_groups(get_signal_views());
+//        signal_drawer->draw_rolling_signal(rolling_samples, rolling_index, ROLLING_BUFFER_LEN, rollingVAO, rollingBAO);
 
-        //global_view = look_at_camera.view();
-        //float C = 10.f;
-        //float R = 10;
-        //vec3 cam_pos(cos(time) * R, 0, sin(time) * R);
-        //look_at_camera.translate(vec3(cam_pos.x, cam_pos.y, cam_pos.z) * loop_deltatime);
-
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+//        ImGui::ShowDemoWindow(&show_demo_window);
+        draw_signal_manager(signal_drawer);
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+// ========================================================================================================
+        // SPF-meter
+        static double last_fps_time = 0;
+        static int frames_cnt = 0;
         frames_cnt++;
-        //global_proj = perspective(radians(FOV), SCR_WIDTH * 1.f / SCR_HEIGHT, 0.1f, 1000.f);
-        //global_proj = ortho(-(float)SCR_WIDTH*C,(float)SCR_WIDTH*C, -(float)SCR_HEIGHT*C, (float)SCR_HEIGHT*C, .1f, 10000.f);
-        global_proj = ortho_controller.proj();
-
         if (time - last_fps_time >= 1.0) {
             printf("%f ms/frame\n", 1000.0 / double(frames_cnt));
             frames_cnt = 0;
             last_fps_time += 1.0;
         }
-
-
-        signal_drawer->draw_signal_groups(get_signal_views());
-        signal_drawer->draw_rolling_signal(rolling_samples, rolling_index, ROLLING_BUFFER_LEN, rollingVAO, rollingBAO);
-
-        // start the ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // ImGui::ShowDemoWindow(&show_demo_window);
-
-        {
-            static bool p_open = NULL;
-            ImGuiWindowFlags window_flags = 0;
-            window_flags |= ImGuiWindowFlags_MenuBar;
-            ImGui::Begin("Signal Data", &p_open, window_flags);
-            if (ImGui::BeginMenuBar()) {
-                if (ImGui::BeginMenu("File")) {
-                    ShowFileMenu();
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenuBar();
-            }
-            show_signal_groups(&signal_groups);
-            ImGui::End();
-        }
-
-        ImGui::Render();
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-// ========================================================================================================
         process_input(window);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    rolling_signal_destroy();
 
     // cleanup
     ImGui_ImplOpenGL3_Shutdown();
@@ -199,9 +151,8 @@ int main() {
 }
 
 static void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    SCR_WIDTH = width;
-    SCR_HEIGHT = height;
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+    global_settings.resolution = vec2(width, height);
+    glViewport(0, 0, width, height);
     // mouse coordinates now are not the same
 }
 
@@ -238,39 +189,28 @@ static void process_input(GLFWwindow *window) {
 
     for (int trackable_key : trackable_keys) {
         if (glfwGetKey(window, trackable_key) == GLFW_PRESS) {
-            fps_controller.processKey(trackable_key, loop_deltatime);
-            ortho_controller.processKey(trackable_key, loop_deltatime);
-            signal_drawer->processKey(trackable_key, loop_deltatime);
+            signal_drawer->process_key(trackable_key, loop_deltatime);
         }
     }
 }
 
 static void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
     static bool first_mouse = true;
+    static vec2 last_mouse_p{};
     if (first_mouse) {
         first_mouse = false;
-        last_mouse_x = xpos;
-        last_mouse_y = ypos;
+        last_mouse_p = vec2(xpos, ypos);
     }
-    float dx = xpos - last_mouse_x;
-    float dy = ypos - last_mouse_y;
-    last_mouse_x = xpos;
-    last_mouse_y = ypos;
-    fps_controller.process_mouse(dx, dy);
-    arcball_controller.mouseMove(xpos, ypos);
+    vec2 d = vec2(xpos - last_mouse_p.x, ypos - last_mouse_p.y);
+    last_mouse_p = vec2(xpos, ypos);
+    signal_drawer->process_mouse(d.x, d.y);
 }
 
 static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
     double mx, my;
     glfwGetCursorPos(window, &mx, &my);
-    arcball_controller.mouseButton(button, action, mods, mx, my);
 }
 
 static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
-    arcball_controller.mouseScroll(xoffset, yoffset);
-    //ortho_controller.mouseScroll(xoffset, yoffset);
-    signal_drawer->mouseScroll(xoffset, yoffset);
-    //FOV += 1.f * yoffset;
-    //SCR_WIDTH += 10 * yoffset;
-    //SCR_HEIGHT += 10 * xoffset;
+    signal_drawer->process_scroll(xoffset, yoffset);
 }
