@@ -100,7 +100,6 @@ static void show_signal_group(signal_group_t *group, int group_id, SignalDrawer 
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV((group_id + i) / 7.0f, 0.8f, 0.8f));
                 ImGui::SameLine();
                 if (ImGui::Button(to_string(i + 1).c_str(), size)) {
-                    // TODO: recalc frustum height
                     signal_drawer->zoom(signal_file->max_value);
                 }
                 ImGui::PopStyleColor(3);
@@ -110,7 +109,6 @@ static void show_signal_group(signal_group_t *group, int group_id, SignalDrawer 
         }
         ImGui::PopID();
     }
-
     ImGui::EndGroup();
 }
 
@@ -120,29 +118,13 @@ static void show_signal_groups(vector<signal_group_t *> *views, SignalDrawer *si
     }
 }
 
-static void ShowFileMenu() {
-    if (ImGui::MenuItem("Open", "Ctrl+O")) {
+static void show_file_menu() {
+    if (ImGui::MenuItem("Open")) {
         add_files(-1);
     }
-    ImGui::Separator();
-    if (ImGui::BeginMenu("Options")) {
-        static bool enabled = true;
-        ImGui::MenuItem("Enabled", "", &enabled);
-        ImGui::BeginChild("child", ImVec2(0, 60), true);
-        for (int i = 0; i < 10; i++)
-            ImGui::Text("Scrolling Text %d", i);
-        ImGui::EndChild();
-        static float f = 0.5f;
-        static int n = 0;
-        static bool b = true;
-        ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
-        ImGui::InputFloat("Input", &f, 0.1f);
-        ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
-        ImGui::Checkbox("Check", &b);
-        ImGui::EndMenu();
+    if (ImGui::MenuItem("Quit", "Alt+F4")) {
+        exit(0);
     }
-    if (ImGui::MenuItem("Checked", NULL, true)) {}
-    if (ImGui::MenuItem("Quit", "Alt+F4")) {}
 }
 
 static void draw_signal_manager(SignalDrawer *signal_drawer) {
@@ -152,12 +134,33 @@ static void draw_signal_manager(SignalDrawer *signal_drawer) {
     ImGui::Begin("Signal Data", &p_open, window_flags);
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            ShowFileMenu();
+            show_file_menu();
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
     }
-    show_signal_groups(&signal_groups, signal_drawer);
+
+    if (ImGui::BeginTabBar("MyTabBar", true)) {
+        if (ImGui::BeginTabItem("Explorer")) {
+            show_signal_groups(&signal_groups, signal_drawer);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Capture")) {
+            static char port_buf[64] = "ttyUSB0";
+            ImGui::InputText("serial port", port_buf, 64);
+            static bool capture_serial = false;
+            if (ImGui::Button(capture_serial ? "STOP" : "START")) {
+                capture_serial = !capture_serial;
+                if (capture_serial) {
+                    serial_com_init(port_buf);
+                } else {
+                    rolling_signal_destroy();
+                }
+            }
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
     ImGui::End();
 }
 

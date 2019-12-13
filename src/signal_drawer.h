@@ -3,7 +3,7 @@
 
 #include "file_repository.h"
 #include "shader.h"
-#include "serial_com.h"
+#include "serial_port.h"
 
 class SignalDrawer {
 private:

@@ -1,5 +1,5 @@
-#ifndef DATAVIEWER_SERIAL_COM_H
-#define DATAVIEWER_SERIAL_COM_H
+#ifndef DATAVIEWER_SERIAL_PORT_H
+#define DATAVIEWER_SERIAL_PORT_H
 // C library headers
 #include <stdio.h>
 #include <string.h>
@@ -26,6 +26,7 @@ float *rolling_samples;
 int rolling_index = 0;
 int rolling_serial_port;
 uint rollingVAO, rollingBAO;
+pthread_t p_thread;
 
 void *fill_buffer(void *port) {
     while (true) {
@@ -43,6 +44,7 @@ void *fill_buffer(void *port) {
 }
 
 void rolling_signal_destroy() {
+    pthread_cancel(p_thread);
     close(rolling_serial_port);
 }
 
@@ -92,8 +94,7 @@ void serial_com_init(string device) {
     glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 4, 0);
     glEnableVertexAttribArray(0);
 
-    pthread_t pthread;
-    int ret_code = pthread_create(&pthread, NULL, &fill_buffer, NULL);
+    int ret_code = pthread_create(&p_thread, NULL, &fill_buffer, NULL);
 }
 
-#endif //DATAVIEWER_SERIAL_COM_H
+#endif //DATAVIEWER_SERIAL_PORT_H

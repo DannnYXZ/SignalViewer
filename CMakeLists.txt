@@ -14,7 +14,7 @@ add_executable(DataViewer src/main.cpp
         deps/imgui/examples/imgui_impl_opengl3.cpp
         deps/imgui/examples/imgui_impl_glfw.cpp
         deps/nfd/nfd_gtk.c
-        deps/nfd/nfd_common.c src/file_repository.h src/gui.h src/signal_drawer.h src/serial_com.h)
+        deps/nfd/nfd_common.c src/file_repository.h src/gui.h src/signal_drawer.h src/serial_port.h)
 
 # configure GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

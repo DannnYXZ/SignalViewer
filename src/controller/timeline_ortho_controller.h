@@ -43,10 +43,13 @@ public:
         xoffset != 0 ? scale.x *= 1 + sign(xoffset) * SCALE_SPEED : scale.x = scale.x;
         yoffset != 0 ? scale.y *= 1 + sign(yoffset) * SCALE_SPEED : scale.y = scale.y;
         scale = max(vec2(FIDELITY), scale);
-        print(vec3(scale, 1));
     }
 
     void process_key(int key, float deltatime) {
+        if (key == GLFW_KEY_W)
+            v_trans += vec3(0, 1, 0) * MOVE_SPEED * scale.y * deltatime;
+        if (key == GLFW_KEY_S)
+            v_trans += vec3(0, -1, 0) * MOVE_SPEED * scale.y * deltatime;
         if (key == GLFW_KEY_A)
             v_trans += vec3(-1, 0, 0) * MOVE_SPEED * scale.x * deltatime;
         if (key == GLFW_KEY_D)

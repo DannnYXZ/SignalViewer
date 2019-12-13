@@ -23,7 +23,7 @@
 #include "gui.h"
 #include "signal_file.h"
 #include "signal_drawer.h"
-#include "serial_com.h"
+#include "serial_port.h"
 
 using namespace glm;
 
@@ -92,8 +92,6 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 130");
 //    ==============================================================================
 
-//    serial_com_init("ttyUSB0");
-
     signal_drawer = new SignalDrawer(global_settings.resolution);
     glLineWidth(global_settings.line_width);
 //    glEnable(GL_DEPTH_TEST);
@@ -120,7 +118,7 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-//        ImGui::ShowDemoWindow(&show_demo_window);
+        ImGui::ShowDemoWindow(&show_demo_window);
         draw_signal_manager(signal_drawer);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -138,7 +136,6 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    rolling_signal_destroy();
 
     // cleanup
     ImGui_ImplOpenGL3_Shutdown();
