@@ -111,10 +111,6 @@ int main() {
         loop_deltatime = time - prev_time;
         prev_time = time;
 
-        signal_drawer->draw_grid();
-        signal_drawer->draw_signal_groups(get_signal_views());
-//        signal_drawer->draw_rolling_signal(rolling_samples, rolling_index, ROLLING_BUFFER_LEN, rollingVAO, rollingBAO);
-
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

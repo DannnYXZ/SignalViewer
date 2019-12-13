@@ -54,7 +54,8 @@ public:
 //        glUniformMatrix4fv(u_proj, 1, GL_FALSE, value_ptr(fps_controller->proj()));
         glUniformMatrix4fv(u_model, 1, GL_FALSE, value_ptr(model));
         for (auto group : *groups) {
-            draw_signal_group(group);
+            if(group->visible)
+                draw_signal_group(group);
         }
     }
 

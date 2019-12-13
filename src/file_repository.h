@@ -16,6 +16,7 @@ struct signal_view_t {
 
 struct signal_group_t {
     bool keep = true;
+    bool visible = true;
     int current_item = 0;
     vector<signal_view_t *> signal_views;
     vector<ImVec4> channel_colors;

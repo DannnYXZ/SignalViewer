@@ -52,7 +52,7 @@ static bool vector_of_strings_getter(void *data, int n, const char **out_text) {
     return true;
 }
 
-static void show_signal_group(signal_group_t *group, int group_id, SignalDrawer *signal_drawer) {
+static void show_signal_group_gui(signal_group_t *group, int group_id, SignalDrawer *signal_drawer) {
     if (!group->keep) {
         remove_group(group_id);
         return;
@@ -60,6 +60,7 @@ static void show_signal_group(signal_group_t *group, int group_id, SignalDrawer 
     ImGui::BeginGroup();
     if (ImGui::CollapsingHeader(("Group " + to_string(group_id)).c_str(),
                                 &group->keep, ImGuiTreeNodeFlags_DefaultOpen)) {
+        group->visible = true;
         ImGui::PushItemWidth(-1);
         if (!group->signal_views.empty()) {
             ImGui::ListBox(("##" + to_string(group_id)).c_str(),
@@ -108,14 +109,18 @@ static void show_signal_group(signal_group_t *group, int group_id, SignalDrawer 
             show_info(group->merged_info);
         }
         ImGui::PopID();
+    } else {
+        group->visible = false;
     }
     ImGui::EndGroup();
 }
 
 static void show_signal_groups(vector<signal_group_t *> *views, SignalDrawer *signal_drawer) {
     for (int i = 0; i < views->size(); i++) {
-        show_signal_group(signal_groups[i], i, signal_drawer);
+        show_signal_group_gui(signal_groups[i], i, signal_drawer);
     }
+    signal_drawer->draw_grid();
+    signal_drawer->draw_signal_groups(get_signal_views());
 }
 
 static void show_file_menu() {
